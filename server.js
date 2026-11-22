@@ -60,6 +60,7 @@ app.get('/api/jobs', async (req, res) => {
     if (response.status === 429) {
       return res.status(429).json({ error: 'API rate limit reached. Please try again later.' });
     }
+    if (!response.ok) console.error('Upstream:', response.status, await response.clone().text());
     if (response.status === 401 || response.status === 403) {
       return res.status(502).json({ error: 'Server API credentials were rejected.' });
     }
