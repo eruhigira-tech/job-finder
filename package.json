@@ -1,0 +1,25 @@
+{
+  "name": "job-finder",
+  "version": "1.0.0",
+  "description": "Job search app using the JSearch API on RapidAPI, deployed behind a load balancer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eruhigira-tech/job-finder.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/eruhigira-tech/job-finder/issues"
+  },
+  "homepage": "https://github.com/eruhigira-tech/job-finder#readme",
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0"
+  }
+}
