@@ -50,6 +50,7 @@ app.get('/api/jobs', async (req, res) => {
     url.searchParams.set('query', q);
     url.searchParams.set('page', page);
     url.searchParams.set('num_pages', '1');
+    url.searchParams.set('country', 'rw');
 
     const response = await fetch(url, {
       headers: { 'x-rapidapi-key': API_KEY, 'x-rapidapi-host': API_HOST },
@@ -60,30 +61,33 @@ app.get('/api/jobs', async (req, res) => {
     if (response.status === 429) {
       return res.status(429).json({ error: 'API rate limit reached. Please try again later.' });
     }
-    if (!response.ok) console.error('Upstream:', response.status, await response.clone().text());
-    if (response.status === 401 || response.status === 403) {
-      return res.status(502).json({ error: 'Server API credentials were rejected.' });
-    }
+   if (!response.ok) console.error('Upstream:', response.status, await response.clone().text());
+   if (response.status === 401 || response.status === 403) {
+  const detail = await response.text();
+  return res.status(502).json({ error: 'Server API credentials were rejected.', detail });
+}
     if (!response.ok) {
       return res.status(502).json({ error: `Upstream API error (${response.status}).` });
     }
 
     const body = await response.json();
-    if (!Array.isArray(body.data)) {
-      return res.status(502).json({ error: 'Unexpected response from the jobs API.' });
-    }
+const list = body && body.data && body.data.jobs;
+if (!Array.isArray(list)) {
+  return res.status(502).json({ error: 'Unexpected response from the jobs API.' });
+}
 
-    const jobs = body.data.map((j) => ({
-      id: j.job_id,
-      title: j.job_title,
-      company: j.employer_name,
-      city: j.job_city,
-      country: j.job_country,
-      type: j.job_employment_type,
-      remote: Boolean(j.job_is_remote),
-      posted: j.job_posted_at_datetime_utc,
-      link: j.job_apply_link,
-    }));
+const jobs = list.map((j) => ({
+  id: j.job_id,
+  title: j.job_title,
+  company: j.employer_name,
+  city: j.job_city,
+  country: j.job_country,
+  type: j.job_employment_type,
+  types: j.job_employment_types || [],
+  remote: Boolean(j.job_is_remote),
+  posted: j.job_posted_at_datetime_utc,
+  link: j.job_apply_link,
+}));
 
     cache.set(cacheKey, { jobs, time: Date.now() });
     res.json({ jobs, cached: false });

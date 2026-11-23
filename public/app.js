@@ -33,7 +33,7 @@ function render() {
 
   let jobs = allJobs.filter((j) =>
     (!text || `${j.title} ${j.company}`.toLowerCase().includes(text)) &&
-    (!type || j.type === type) &&
+    (!type || (j.types || []).includes(type)) &&
     (!remote || j.remote)
   );
 
