@@ -4,8 +4,8 @@
   "description": "Job search app using the JSearch API on RapidAPI, deployed behind a load balancer",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "start": "node server.js"
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eruhigira-tech/job-finder.git"
