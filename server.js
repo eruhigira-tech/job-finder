@@ -1,7 +1,10 @@
 require('dotenv').config();
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const os = require('os');
 const path = require('path');
+const cache = require('./cache');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,11 +16,10 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-// Simple in-memory cache (bonus: performance optimisation)
-const cache = new Map();
-const CACHE_TTL_MS = 10 * 60 * 1000;
+app.set('trust proxy', 2); // HAProxy + nginx in front; use 1 if only one proxy
+app.use(helmet());
+app.use('/api/', rateLimit({ windowMs: 60 * 1000, limit: 30 }));
 
-// Identify which server answered (used to prove load balancing)
 app.use((req, res, next) => {
   res.setHeader('X-Served-By', os.hostname());
   next();
@@ -30,16 +32,20 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api/jobs', async (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (!q || q.length > 100) {
-    return res.status(400).json({ error: 'Enter a search term (1-100 characters).' });
+  const q = String(req.query.q || '').trim();
+  if (!/^[\p{L}\p{N} ,.'-]{2,80}$/u.test(q)) {
+    return res.status(400).json({ error: 'Enter 2 to 80 letters, numbers or spaces.' });
   }
-  const page = Math.min(Math.max(parseInt(req.query.page, 10) || 1, 1), 5);
-  const cacheKey = `${q.toLowerCase()}|${page}`;
+  const page = parseInt(req.query.page, 10) || 1;
+  if (page < 1 || page > 5) {
+    return res.status(400).json({ error: 'Page must be between 1 and 5.' });
+  }
 
-  const hit = cache.get(cacheKey);
-  if (hit && Date.now() - hit.time < CACHE_TTL_MS) {
-    return res.json({ jobs: hit.jobs, cached: true });
+  const key = JSON.stringify([q.toLowerCase(), page]);
+  const cached = cache.get(key);
+  if (cached) {
+    res.set('X-Cache', 'HIT');
+    return res.json({ jobs: cached });
   }
 
   const controller = new AbortController();
@@ -61,36 +67,33 @@ app.get('/api/jobs', async (req, res) => {
     if (response.status === 429) {
       return res.status(429).json({ error: 'API rate limit reached. Please try again later.' });
     }
-   if (!response.ok) console.error('Upstream:', response.status, await response.clone().text());
-   if (response.status === 401 || response.status === 403) {
-  const detail = await response.text();
-  return res.status(502).json({ error: 'Server API credentials were rejected.', detail });
-}
     if (!response.ok) {
+      console.error('Upstream:', response.status, await response.text());
       return res.status(502).json({ error: `Upstream API error (${response.status}).` });
     }
 
     const body = await response.json();
-const list = body && body.data && body.data.jobs;
-if (!Array.isArray(list)) {
-  return res.status(502).json({ error: 'Unexpected response from the jobs API.' });
-}
+    const list = body && body.data;
+    if (!Array.isArray(list)) {
+      return res.status(502).json({ error: 'Unexpected response from the jobs API.' });
+    }
 
-const jobs = list.map((j) => ({
-  id: j.job_id,
-  title: j.job_title,
-  company: j.employer_name,
-  city: j.job_city,
-  country: j.job_country,
-  type: j.job_employment_type,
-  types: j.job_employment_types || [],
-  remote: Boolean(j.job_is_remote),
-  posted: j.job_posted_at_datetime_utc,
-  link: j.job_apply_link,
-}));
+    const jobs = list.map((j) => ({
+      id: j.job_id,
+      title: j.job_title,
+      company: j.employer_name,
+      city: j.job_city,
+      country: j.job_country,
+      type: j.job_employment_type,
+      types: j.job_employment_types || [],
+      remote: Boolean(j.job_is_remote),
+      posted: j.job_posted_at_datetime_utc,
+      link: j.job_apply_link,
+    }));
 
-    cache.set(cacheKey, { jobs, time: Date.now() });
-    res.json({ jobs, cached: false });
+    cache.set(key, jobs); // only successful responses are cached
+    res.set('X-Cache', 'MISS');
+    res.json({ jobs });
   } catch (err) {
     clearTimeout(timer);
     const timedOut = err.name === 'AbortError';
