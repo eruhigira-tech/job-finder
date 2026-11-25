@@ -250,4 +250,4 @@ Failover test: run `pm2 stop jobfinder` on Web01, reload the load balancer addre
 - Possible additions: email verification, saving the tracker on the server, job alerts.
 
 ## Credentials
-API keys and login details are provided in the submission comment (not in the repo). Create your own account on the sign-up form; the test account details are in the submission comment. Each account's tracker is stored in the visitor's own browser.
+API keys and login details are provided in the submission comment (not in the repo). Each account's tracker is stored in the visitor's own browser.
