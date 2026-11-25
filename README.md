@@ -5,7 +5,7 @@
 Search live job listings (Rwanda by default, 15 countries available), see hiring insights, **create an account**, and **track every application from Saved to Offer**.
 
 ## Demo
-- Video (≤2 min): `<ADD YOUTUBE/VIMEO LINK>`
+- Video (≤2 min): `<[https://youtu.be/6zlSmcrkoEs]>`
 - Load balancer URL: `ssh ubuntu@localhost -p 2210`
 - Web01: `ssh ubuntu@localhost -p 2211>` | Web02: `ssh ubuntu@localhost -p 2212`
 
@@ -57,7 +57,7 @@ k8s/                 Kubernetes manifests     deploy/              HAProxy confi
 |---|---|---|
 | `RAPIDAPI_KEY` | Your RapidAPI key (required, never committed) | none |
 | `RAPIDAPI_HOST` | API host | `jsearch.p.rapidapi.com` |
-| `PORT` | Port Node listens on | `3000` |
+| `PORT` | Port Node listens on | `3001` |
 | `TRUST_PROXY` | Proxies in front of Node: `0` local, `1` Docker, `2` nginx + HAProxy | `0` |
 | `RATE_LIMIT` | API requests per IP per minute | `30` |
 | `API_TIMEOUT_MS` | Max wait for the jobs API | `20000` |
@@ -91,22 +91,22 @@ cp .env.example .env   # Windows PowerShell: Copy-Item .env.example .env
 Edit `.env` and add your key, then:
 
 ```bash
-npm start              # http://localhost:3000
+npm start              # http://localhost:3001
 npm test               # run the automated tests (the API is faked, so no quota is used)
 ```
 
-Health check: `http://localhost:3000/health`
+Health check: `http://localhost:3001/health`
 
 ### Testing the cache and security (PowerShell)
 ```powershell
 # Cache: first MISS, then HIT
-1..2 | ForEach-Object { (Invoke-WebRequest "http://localhost:3000/api/jobs?q=developer" -UseBasicParsing).Headers["X-Cache"] }
+1..2 | ForEach-Object { (Invoke-WebRequest "http://localhost:3001/api/jobs?q=developer" -UseBasicParsing).Headers["X-Cache"] }
 
 # Input validation: expect 400
-try { Invoke-WebRequest "http://localhost:3000/api/jobs?q=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E" -UseBasicParsing } catch { $_.Exception.Response.StatusCode.value__ }
+try { Invoke-WebRequest "http://localhost:3001/api/jobs?q=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E" -UseBasicParsing } catch { $_.Exception.Response.StatusCode.value__ }
 
 # Rate limit: expect 429 at the end (after 30 requests/minute)
-1..40 | ForEach-Object { try { (Invoke-WebRequest "http://localhost:3000/api/jobs?q=test" -UseBasicParsing).StatusCode } catch { $_.Exception.Response.StatusCode.value__ } }
+1..40 | ForEach-Object { try { (Invoke-WebRequest "http://localhost:3001/api/jobs?q=test" -UseBasicParsing).StatusCode } catch { $_.Exception.Response.StatusCode.value__ } }
 ```
 Use `curl.exe` instead of `curl` in PowerShell. Tip: the 40-request test uses real API quota the first time only; after that results come from the cache.
 
@@ -173,14 +173,14 @@ pm2 resurrect
 cd /var/www/job-finder && pm2 start server.js --name jobfinder
 ```
 
-**nginx reverse proxy (port 80 → 3000):** create `/etc/nginx/sites-available/jobfinder`:
+**nginx reverse proxy (port 80 → 3001):** create `/etc/nginx/sites-available/jobfinder`:
 
 ```nginx
 server {
     listen 80 default_server;
     server_name _;
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -201,7 +201,7 @@ Each server returns its own hostname from `/health` and in an `X-Served-By` head
 ### Accounts with two servers
 Accounts are stored in `data/users.json` **on each web server**, and the load balancer sends a browser to one server and keeps it there (the `SERVERID` cookie in the HAProxy config), so a logged-in user stays on the server where the account exists. Use the **same `SESSION_SECRET`** on both servers. To let one account log in on both servers, copy the file once:
 ```bash
-scp ubuntu@<web01>:/var/www/job-finder/data/users.json /tmp/users.json   # then place it on web02 in the same folder
+ssh ubuntu@localhost -p 2211 :/var/www/job-finder/data/users.json /tmp/users.json   # then place it on web02 in the same folder
 ```
 A production system would use a shared database instead; this keeps the lab dependency-free.
 
@@ -226,9 +226,6 @@ backend webservers
 haproxy -c -f /etc/haproxy/haproxy.cfg   # validate the config
 sudo service haproxy reload
 ```
-
-## Testing the Load Balancer
-> TODO: paste the real output below and show it in the demo video.
 
 ```powershell
 1..6 | ForEach-Object { curl.exe -sI http://<ssh ubuntu@localhost -p 2210>/health | Select-String -Pattern "x-served-by" }
