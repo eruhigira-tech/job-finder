@@ -3,44 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Job Finder</title>
+  <title>Job Finder · Rwanda</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Job Finder</h1>
-    <p>Search live job listings, then filter and sort the results.</p>
+  <header class="hero">
+    <button id="themeBtn" class="ghost" aria-label="Toggle dark mode">🌓</button>
+    <h1>Find your next job in Rwanda</h1>
+    <p>Live listings from RwandaLink, BrighterMonday, Rwandajob and more.</p>
+    <form id="searchForm" class="search">
+      <input id="query" type="search" placeholder="e.g. software developer in Kigali" aria-label="Search jobs" required />
+      <button id="searchBtn" type="submit">Search</button>
+    </form>
+    <div class="quick" id="quick"></div>
   </header>
 
   <main>
-    <div class="search">
-      <input id="query" type="text" placeholder="e.g. software engineer in Kigali" />
-      <button id="searchBtn">Search</button>
-    </div>
-
-    <div class="controls" id="controls" hidden>
-      <input id="filterText" type="text" placeholder="Filter by title or company…" />
-      <select id="filterType">
-        <option value="">All job types</option>
+    <section class="controls" id="controls" hidden>
+      <input id="filterText" type="search" placeholder="Filter by title or company…" aria-label="Filter results" />
+      <select id="filterType" aria-label="Job type">
+        <option value="">All types</option>
         <option value="FULLTIME">Full-time</option>
         <option value="PARTTIME">Part-time</option>
         <option value="CONTRACTOR">Contract</option>
         <option value="INTERN">Internship</option>
       </select>
-      <label><input type="checkbox" id="remoteOnly" /> Remote only</label>
-      <select id="sortBy">
+      <select id="sortBy" aria-label="Sort">
         <option value="newest">Newest first</option>
         <option value="title">Title (A–Z)</option>
         <option value="company">Company (A–Z)</option>
       </select>
-    </div>
-
+      <label class="check"><input type="checkbox" id="remoteOnly" /> Remote</label>
+      <label class="check"><input type="checkbox" id="savedOnly" /> ★ Saved</label>
+    </section>
     <p id="status" role="status" aria-live="polite"></p>
-    <div id="results"></div>
+    <div id="results" class="grid"></div>
+    <button id="moreBtn" class="more" hidden>Load more</button>
   </main>
 
   <footer>
-    Data from <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">JSearch</a> via RapidAPI.
+    <span id="serverBadge" class="pill" hidden></span>
+    <p>Data from <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">JSearch</a> (OpenWeb Ninja) via RapidAPI.</p>
   </footer>
   <script src="app.js"></script>
 </body>
