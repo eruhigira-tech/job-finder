@@ -3,48 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Job Finder · Rwanda</title>
+  <title>Job Finder – search jobs, track applications</title>
+  <meta name="description" content="Search live job listings, see hiring insights, and track every application from saved to offer." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to content</a>
+
   <header class="hero">
-    <button id="themeBtn" class="ghost" aria-label="Toggle dark mode">🌓</button>
-    <h1>Find your next job in Rwanda</h1>
-    <p>Live listings from RwandaLink, BrighterMonday, Rwandajob and more.</p>
-    <form id="searchForm" class="search">
-      <input id="query" type="search" placeholder="e.g. software developer in Kigali" aria-label="Search jobs" required />
-      <button id="searchBtn" type="submit">Search</button>
-    </form>
-    <div class="quick" id="quick"></div>
+    <div class="wrap">
+      <nav class="topbar" aria-label="Top bar">
+        <div class="brand"><span class="logo" aria-hidden="true">JF</span> Job Finder</div>
+        <div class="topbar-actions">
+          <span id="servedBy" class="pill pill-ghost" hidden title="Which server answered, and whether the cache was used"></span>
+          <button id="themeBtn" class="icon-btn" type="button" aria-label="Switch between light and dark mode">◐</button>
+        </div>
+      </nav>
+
+      <h1>Find your next role.<br /><span class="grad">Track it all the way to the offer.</span></h1>
+      <p class="lead">Live job listings, hiring insights and a built-in application tracker, all in one place.</p>
+
+      <form id="searchForm" class="searchbox" novalidate>
+        <label class="sr" for="query">Job title or keywords</label>
+        <input id="query" type="search" placeholder="e.g. software engineer, accountant, nurse" maxlength="80" autocomplete="off" required />
+        <label class="sr" for="country">Country</label>
+        <select id="country">
+          <option value="rw">🇷🇼 Rwanda</option>
+          <option value="ke">🇰🇪 Kenya</option>
+          <option value="ug">🇺🇬 Uganda</option>
+          <option value="tz">🇹🇿 Tanzania</option>
+          <option value="za">🇿🇦 South Africa</option>
+          <option value="ng">🇳🇬 Nigeria</option>
+          <option value="gh">🇬🇭 Ghana</option>
+          <option value="et">🇪🇹 Ethiopia</option>
+          <option value="ae">🇦🇪 UAE</option>
+          <option value="gb">🇬🇧 United Kingdom</option>
+          <option value="us">🇺🇸 United States</option>
+          <option value="ca">🇨🇦 Canada</option>
+          <option value="de">🇩🇪 Germany</option>
+          <option value="fr">🇫🇷 France</option>
+          <option value="in">🇮🇳 India</option>
+        </select>
+        <label class="sr" for="datePosted">Date posted</label>
+        <select id="datePosted">
+          <option value="all">Any time</option>
+          <option value="today">Today</option>
+          <option value="3days">Last 3 days</option>
+          <option value="week">Last week</option>
+          <option value="month">Last month</option>
+        </select>
+        <button id="searchBtn" type="submit">Search</button>
+      </form>
+      <div id="recents" class="chips" aria-label="Recent searches"></div>
+    </div>
   </header>
 
-  <main>
-    <section class="controls" id="controls" hidden>
-      <input id="filterText" type="search" placeholder="Filter by title or company…" aria-label="Filter results" />
-      <select id="filterType" aria-label="Job type">
-        <option value="">All types</option>
-        <option value="FULLTIME">Full-time</option>
-        <option value="PARTTIME">Part-time</option>
-        <option value="CONTRACTOR">Contract</option>
-        <option value="INTERN">Internship</option>
-      </select>
-      <select id="sortBy" aria-label="Sort">
-        <option value="newest">Newest first</option>
-        <option value="title">Title (A–Z)</option>
-        <option value="company">Company (A–Z)</option>
-      </select>
-      <label class="check"><input type="checkbox" id="remoteOnly" /> Remote</label>
-      <label class="check"><input type="checkbox" id="savedOnly" /> ★ Saved</label>
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Views">
+      <button id="tab-search" class="tab" role="tab" aria-selected="true" aria-controls="view-search" type="button">Search</button>
+      <button id="tab-tracker" class="tab" role="tab" aria-selected="false" aria-controls="view-tracker" type="button">
+        My tracker <span id="trackerCount" class="count">0</span>
+      </button>
+    </div>
+  </div>
+
+  <main id="main" class="wrap">
+    <section id="view-search" role="tabpanel" aria-labelledby="tab-search">
+      <div id="insights" class="insights" hidden></div>
+
+      <div class="controls" id="controls" hidden>
+        <input id="filterText" type="search" placeholder="Filter by title or company…" aria-label="Filter by title or company" />
+        <select id="filterType" aria-label="Job type">
+          <option value="">All job types</option>
+          <option value="FULLTIME">Full-time</option>
+          <option value="PARTTIME">Part-time</option>
+          <option value="CONTRACTOR">Contract</option>
+          <option value="INTERN">Internship</option>
+        </select>
+        <label class="check"><input type="checkbox" id="remoteOnly" /> Remote only</label>
+        <select id="sortBy" aria-label="Sort results">
+          <option value="newest">Newest first</option>
+          <option value="title">Title (A–Z)</option>
+          <option value="company">Company (A–Z)</option>
+        </select>
+      </div>
+
+      <p id="status" role="status" aria-live="polite"></p>
+      <div id="results" class="grid"></div>
+      <div id="empty" class="empty">
+        <div class="empty-art" aria-hidden="true">🔎</div>
+        <h2>Start with a search</h2>
+        <p>Pick a country, type a role, and hit Search. Save the jobs you like and follow them in your tracker.</p>
+        <div id="suggestions" class="chips"></div>
+      </div>
     </section>
-    <p id="status" role="status" aria-live="polite"></p>
-    <div id="results" class="grid"></div>
-    <button id="moreBtn" class="more" hidden>Load more</button>
+
+    <section id="view-tracker" role="tabpanel" aria-labelledby="tab-tracker" hidden>
+      <div class="tracker-head">
+        <div>
+          <h2>My application tracker</h2>
+          <p class="muted">Saved in this browser only. Change a job’s stage from its dropdown.</p>
+        </div>
+        <div class="row">
+          <button id="exportBtn" class="btn-secondary" type="button">Export CSV</button>
+          <button id="clearBtn" class="btn-secondary btn-danger" type="button">Clear all</button>
+        </div>
+      </div>
+      <div id="board" class="board"></div>
+    </section>
   </main>
 
   <footer>
-    <span id="serverBadge" class="pill" hidden></span>
-    <p>Data from <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">JSearch</a> (OpenWeb Ninja) via RapidAPI.</p>
+    <p>Data from <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">JSearch</a> by OpenWeb Ninja via RapidAPI.</p>
   </footer>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,3 +1,8 @@
 node_modules
 .env
 .git
+.github
+tests
+k8s
+deploy
+*.md
