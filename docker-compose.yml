@@ -1,0 +1,25 @@
+# Local copy of the lab architecture: HAProxy -> two identical app containers.
+#   docker compose up --build
+# Then open http://localhost:8080 and refresh: the "Served by" badge alternates.
+services:
+  web1:
+    build: .
+    env_file: .env
+    environment:
+      TRUST_PROXY: "1"
+    restart: unless-stopped
+  web2:
+    build: .
+    env_file: .env
+    environment:
+      TRUST_PROXY: "1"
+    restart: unless-stopped
+  lb:
+    image: haproxy:2.9-alpine
+    volumes:
+      - ./deploy/haproxy.docker.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - web1
+      - web2

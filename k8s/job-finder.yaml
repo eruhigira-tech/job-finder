@@ -1,0 +1,57 @@
+# Kubernetes deployment: 2 replicas behind one Service (Kubernetes does the load balancing).
+#   kubectl apply -f k8s/secret.example.yaml     (after putting your real key in it)
+#   kubectl apply -f k8s/job-finder.yaml
+#   kubectl get pods
+#   kubectl port-forward svc/job-finder 8080:80    -> http://localhost:8080
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-finder
+  labels: { app: job-finder }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: job-finder }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  template:
+    metadata:
+      labels: { app: job-finder }
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/eruhigira-tech/job-finder:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: RAPIDAPI_KEY
+              valueFrom:
+                secretKeyRef: { name: job-finder-secret, key: RAPIDAPI_KEY }
+            - name: TRUST_PROXY
+              value: "1"
+          readinessProbe:
+            httpGet: { path: /health, port: 3000 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 3000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 192Mi }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-finder
+spec:
+  selector: { app: job-finder }
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP
