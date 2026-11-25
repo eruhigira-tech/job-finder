@@ -160,7 +160,10 @@ if (require.main === module) {
     process.exit(1);
   }
   const PORT = process.env.PORT || 3000;
-  const server = createApp().listen(PORT, () => console.log(`Job Finder running on port ${PORT}`));
+ const server = createApp().listen(PORT, (err) => {
+  if (err) { console.error('Could not start on port', PORT, '-', err.message); process.exit(1); }
+  console.log(`Job Finder running on port ${PORT}`);
+});
   // Lets Docker / Kubernetes stop the container cleanly.
   process.on('SIGTERM', () => server.close(() => process.exit(0)));
 }
